@@ -126,8 +126,8 @@ async function runEval() {
 
     console.log(`  Expected: ${test.expectedTool || 'None'}, Actual: ${actualTool || 'None'} -> ${success ? '✅' : '❌'}`);
     
-    // Sleep for 9 seconds to avoid Gemini Free Tier rate limit (15 RPM)
-    await new Promise((resolve) => setTimeout(resolve, 9000));
+    // Wait 25 seconds between prompts to strictly respect 5 RPM (and multiple state calls per prompt)
+    await new Promise((resolve) => setTimeout(resolve, 25000));
   }
 
   // Generate Report
