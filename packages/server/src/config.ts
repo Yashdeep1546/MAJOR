@@ -13,7 +13,7 @@ export const config = {
   geminiApiKey: required('GEMINI_API_KEY'),
   /** gemini-2.0-flash for fast/cheap steps, gemini-2.0-pro for complex reasoning */
   models: {
-    fast: process.env.GEMINI_MODEL_FAST || 'gemini-3.7-flash',
-    reasoning: process.env.GEMINI_MODEL_REASONING || 'gemini-3.8-flash',
+    fast: process.env.GEMINI_MODEL_FAST || 'gemini-2.5-flash',
+    reasoning: process.env.GEMINI_MODEL_REASONING || 'gemini-3-flash-preview',
   },
 } as const;
