@@ -725,74 +725,72 @@ body {
   font-size: 0.88rem;
 }
 
- / *    % %  T o a s t   S y s t e m    % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %  * / 
- . t o a s t - c o n t a i n e r   { 
-     p o s i t i o n :   f i x e d ; 
-     t o p :   v a r ( - - s p a c e - 4 ) ; 
-     r i g h t :   v a r ( - - s p a c e - 4 ) ; 
-     z - i n d e x :   9 9 9 9 ; 
-     d i s p l a y :   f l e x ; 
-     f l e x - d i r e c t i o n :   c o l u m n ; 
-     g a p :   v a r ( - - s p a c e - 2 ) ; 
-     p o i n t e r - e v e n t s :   n o n e ; 
- } 
- 
- . t o a s t   { 
-     p o i n t e r - e v e n t s :   a u t o ; 
-     w i d t h :   3 0 0 p x ; 
-     b a c k g r o u n d :   v a r ( - - b g - s u r f a c e ) ; 
-     b o r d e r :   1 p x   s o l i d   v a r ( - - b o r d e r - s u b t l e ) ; 
-     b o r d e r - r a d i u s :   v a r ( - - r a d i u s - m d ) ; 
-     p a d d i n g :   v a r ( - - s p a c e - 3 )   v a r ( - - s p a c e - 4 ) ; 
-     b o x - s h a d o w :   0   4 p x   1 2 p x   r g b a ( 0 , 0 , 0 , 0 . 5 ) ; 
-     a n i m a t i o n :   t o a s t - e n t e r   v a r ( - - d u r a t i o n - s t d )   v a r ( - - e a s e - s t a n d a r d ) ; 
-     t r a n s i t i o n :   o p a c i t y   v a r ( - - d u r a t i o n - f a s t ) ,   t r a n s f o r m   v a r ( - - d u r a t i o n - s t d ) ; 
-     d i s p l a y :   f l e x ; 
-     f l e x - d i r e c t i o n :   c o l u m n ; 
-     g a p :   v a r ( - - s p a c e - 1 ) ; 
- } 
- 
- . t o a s t . t o a s t - e x i t   { 
-     o p a c i t y :   0 ; 
- } 
- 
- @ k e y f r a m e s   t o a s t - e n t e r   { 
-     f r o m   { 
-         o p a c i t y :   0 ; 
-         t r a n s f o r m :   t r a n s l a t e X ( 1 0 0 % ) ; 
-     } 
-     t o   { 
-         o p a c i t y :   1 ; 
-         t r a n s f o r m :   t r a n s l a t e X ( 0 ) ; 
-     } 
- } 
- 
- . t o a s t - i n f o   { 
-     b a c k g r o u n d :   v a r ( - - p r i m a r y - b g ) ; 
-     b o r d e r - c o l o r :   v a r ( - - p r i m a r y ) ; 
- } 
- . t o a s t - i n f o   . t o a s t - t i t l e   {   c o l o r :   v a r ( - - p r i m a r y ) ;   } 
- 
- . t o a s t - w a r n i n g   { 
-     b a c k g r o u n d :   v a r ( - - w a r n i n g - b g ) ; 
-     b o r d e r - c o l o r :   v a r ( - - w a r n i n g ) ; 
- } 
- . t o a s t - w a r n i n g   . t o a s t - t i t l e   {   c o l o r :   v a r ( - - w a r n i n g ) ;   } 
- 
- . t o a s t - e r r o r   { 
-     b a c k g r o u n d :   v a r ( - - e r r o r - b g ) ; 
-     b o r d e r - c o l o r :   v a r ( - - e r r o r ) ; 
- } 
- . t o a s t - e r r o r   . t o a s t - t i t l e   {   c o l o r :   v a r ( - - e r r o r ) ;   } 
- 
- . t o a s t - t i t l e   { 
-     f o n t - w e i g h t :   6 0 0 ; 
-     f o n t - s i z e :   0 . 8 8 r e m ; 
- } 
- 
- . t o a s t - m e s s a g e   { 
-     f o n t - s i z e :   0 . 8 r e m ; 
-     c o l o r :   v a r ( - - t e x t - s e c o n d a r y ) ; 
- } 
-  
- 
+/* -- Toast System ----------------------------------- */
+.toast-container {
+  position: fixed;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  width: 300px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  animation: toast-enter var(--duration-std) var(--ease-standard);
+  transition: opacity var(--duration-fast), transform var(--duration-std);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.toast.toast-exit {
+  opacity: 0;
+}
+
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.toast-info {
+  background: var(--primary-bg);
+  border-color: var(--primary);
+}
+.toast-info .toast-title { color: var(--primary); }
+
+.toast-warning {
+  background: var(--warning-bg);
+  border-color: var(--warning);
+}
+.toast-warning .toast-title { color: var(--warning); }
+
+.toast-error {
+  background: var(--error-bg);
+  border-color: var(--error);
+}
+.toast-error .toast-title { color: var(--error); }
+
+.toast-title {
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.toast-message {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}

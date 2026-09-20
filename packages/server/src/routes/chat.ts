@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { OrchestratorEngine } from '../orchestrator/engine.js';
+import { redisService } from '../services/redis.service.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -78,16 +79,25 @@ router.post('/', async (req, res, next) => {
       },
     });
 
-    // Fetch recent history for context
-    const recentMessages = await prisma.message.findMany({
-      where: { conversationId: convId },
-      orderBy: { createdAt: 'desc' },
-      take: 20,
-    });
-    const history = recentMessages.reverse().map((m) => ({
-      role: m.role.toLowerCase(),
-      content: m.content,
-    }));
+    // Fetch recent history for context from Redis first, then Postgres
+    let history: Array<{role: string; content: string}> = [];
+    const cachedHistory = await redisService.getConversationHistory(convId);
+    
+    if (cachedHistory) {
+      console.log(`[Redis] Cache HIT for conversation ${convId}`);
+      history = cachedHistory;
+    } else {
+      console.log(`[Redis] Cache MISS for conversation ${convId}, falling back to Postgres`);
+      const recentMessages = await prisma.message.findMany({
+        where: { conversationId: convId },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      });
+      history = recentMessages.reverse().map((m) => ({
+        role: m.role.toLowerCase(),
+        content: m.content,
+      }));
+    }
 
     // Run orchestrator
     const result = await engine.run({
@@ -105,6 +115,15 @@ router.post('/', async (req, res, next) => {
         content: result.response,
       },
     });
+
+    // Update Redis cache with the new interaction
+    const updatedHistory = [
+      ...history, 
+      { role: 'user', content: message }, 
+      { role: 'assistant', content: result.response }
+    ];
+    // Keep context window bounded to 20 messages
+    await redisService.setConversationHistory(convId, updatedHistory.slice(-20), 3600);
 
     res.json({
       response: result.response,

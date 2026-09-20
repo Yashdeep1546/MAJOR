@@ -66,9 +66,9 @@ async function runEval() {
   let passed = 0;
   let failed = 0;
 
-  for (let i = 0; i < EVAL_PROMPTS.length; i++) {
+  for (let i = 0; i < 3; i++) {
     const test = EVAL_PROMPTS[i];
-    console.log(`[${i + 1}/${EVAL_PROMPTS.length}] Running: "${test.prompt}"`);
+    console.log(`\n[${i + 1}/3] Running: "${test.prompt}"`);
 
     // Create fresh conversation for each to avoid history interference
     const conv = await prisma.conversation.create({
@@ -78,6 +78,7 @@ async function runEval() {
     const startTime = performance.now();
     let actualToolsStr: string = 'None';
     let success = false;
+    let rawResult: any = null;
     
     try {
       const result = await engine.run({
@@ -85,6 +86,7 @@ async function runEval() {
         conversationId: conv.id,
         userId: user.id,
       });
+      rawResult = result;
 
       const toolsUsed = result.toolsUsed || [];
       actualToolsStr = toolsUsed.length > 0 ? toolsUsed.join(' -> ') : 'None';
@@ -115,6 +117,16 @@ async function runEval() {
     });
 
     console.log(`  Expected: ${test.expectedTool || 'None'}, Actual: ${actualToolsStr} -> ${success ? '✅' : '❌'}`);
+    
+    if (!success && rawResult) {
+      console.log('  [DEBUG RAW RESULT]:');
+      console.log(JSON.stringify(rawResult.steps.map((s: any) => ({
+        state: s.state,
+        toolName: s.toolName,
+        output: typeof s.output === 'string' ? s.output.substring(0, 100) + '...' : s.output,
+        error: s.error
+      })), null, 2));
+    }
     
     // Wait 25 seconds between prompts to strictly respect 5 RPM (and multiple state calls per prompt)
     await new Promise((resolve) => setTimeout(resolve, 25000));

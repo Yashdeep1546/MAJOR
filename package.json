@@ -7,6 +7,13 @@
     "db:migrate": "pnpm --filter @aether/server db:migrate",
     "db:push": "pnpm --filter @aether/server db:push",
     "db:seed": "pnpm --filter @aether/server db:seed",
-    "eval": "pnpm --filter @aether/server eval"
+    "eval": "pnpm --filter @aether/server eval",
+    "test": "pnpm -r test",
+    "lint": "eslint \"packages/**/*.{ts,tsx}\"",
+    "typecheck": "pnpm -r run typecheck"
+  },
+  "devDependencies": {
+    "eslint": "^10.11.0",
+    "typescript-eslint": "^8.70.0"
   }
 }

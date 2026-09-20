@@ -28,8 +28,10 @@ app.use('/api/traces', auditRoutes);
 // Error handler (must be last)
 app.use(errorHandler);
 
-app.listen(config.port, () => {
-  console.log(`🌀 AETHER server running on http://localhost:${config.port}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(config.port, () => {
+    console.log(`🌀 AETHER server running on http://localhost:${config.port}`);
+  });
+}
 
 export default app;

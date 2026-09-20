@@ -18,6 +18,7 @@ model User {
 
   tasks         Task[]
   conversations Conversation[]
+  preferences   Preference?
 
   @@map("users")
 }
@@ -33,6 +34,8 @@ model Task {
   user        User       @relation(fields: [userId], references: [id])
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  reminders   Reminder[]
 
   @@index([userId])
   @@index([status])
@@ -85,12 +88,45 @@ model AgentAction {
   @@map("agent_actions")
 }
 
+model Preference {
+  id                   String   @id @default(uuid())
+  userId               String   @unique @map("user_id")
+  user                 User     @relation(fields: [userId], references: [id])
+  timezone             String   @default("UTC")
+  notificationsEnabled Boolean  @default(true)
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  @@map("preferences")
+}
+
+model Reminder {
+  id        String         @id @default(uuid())
+  taskId    String         @map("task_id")
+  task      Task           @relation(fields: [taskId], references: [id])
+  fireAt    DateTime       @map("fire_at")
+  status    ReminderStatus @default(PENDING)
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+
+  @@index([taskId])
+  @@index([status, fireAt])
+  @@map("reminders")
+}
+
 // ─── Enums ────────────────────────────────────────────
 
 enum TaskStatus {
   TODO
   IN_PROGRESS
   DONE
+  CANCELLED
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+  FAILED
   CANCELLED
 }
 

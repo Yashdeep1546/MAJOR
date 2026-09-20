@@ -21,7 +21,7 @@ export default function TasksPage() {
   const { showToast } = useToast();
   
   const retryCount = useRef(0);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchTasks = useCallback(async (manual = false) => {

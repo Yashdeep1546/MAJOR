@@ -11,7 +11,9 @@
     "db:push": "prisma db push",
     "db:seed": "tsx seed.ts",
     "db:studio": "prisma studio",
-    "eval": "tsx scripts/eval.ts"
+    "eval": "tsx scripts/eval.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@aether/shared": "workspace:*",
@@ -27,9 +29,13 @@
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
+    "@types/supertest": "^7.2.1",
     "@types/uuid": "^10.0.0",
     "prisma": "^6.0.0",
+    "supertest": "^7.2.2",
     "tsx": "^4.19.0",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "vitest": "^5.0.1",
+    "vitest-mock-extended": "^5.1.1"
   }
 }

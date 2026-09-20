@@ -17,7 +17,7 @@ export class GeminiClient {
     this.reasoningModel = this.genAI.getGenerativeModel({
       model: config.models.reasoning,
       tools: [{
-        functionDeclarations: getGeminiFunctionDeclarations() as FunctionDeclaration[],
+        functionDeclarations: getGeminiFunctionDeclarations() as unknown as FunctionDeclaration[],
       }],
       systemInstruction: "Colloquial or broad requests to view or inspect items (e.g., 'list things', 'show my stuff', 'what do I have') are valid queries and must invoke `list_tasks`.\nIf the user issues contradictory instructions or self-corrects within a single prompt (e.g., 'Create a high priority task and then make it low priority'), synthesize the final desired state and execute the intended action (e.g., call `create_task` with priority: LOW).",
     });
