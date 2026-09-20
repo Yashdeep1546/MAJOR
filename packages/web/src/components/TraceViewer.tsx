@@ -40,8 +40,24 @@ export default function TraceViewer({ sessionId, onClose }: TraceViewerProps) {
       </div>
 
       {loading ? (
+        <div className="trace-steps">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="trace-step" style={{ pointerEvents: 'none' }}>
+              <div className="trace-step-header" style={{ opacity: 0.5, animation: `pulse-dot 1.5s infinite ${i * 150}ms` }}>
+                <span style={{ width: '80px', height: '14px', background: 'var(--bg-elevated)', borderRadius: '4px', display: 'inline-block' }}></span>
+                <span style={{ width: '40px', height: '12px', background: 'var(--bg-elevated)', borderRadius: '4px', display: 'inline-block' }}></span>
+              </div>
+              <div className="trace-step-details" style={{ opacity: 0.5, animation: `pulse-dot 1.5s infinite ${(i * 150) + 100}ms` }}>
+                <span className="trace-tag" style={{ width: '60px', height: '18px', background: 'var(--bg-elevated)', border: 'none' }}></span>
+                <span className="trace-tag" style={{ width: '90px', height: '18px', background: 'var(--bg-elevated)', border: 'none' }}></span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : steps.length === 0 ? (
         <div className="empty-state">
-          <div className="loading-dots"><span /><span /><span /></div>
+          <div className="empty-state-icon">📄</div>
+          <p>No trace data available.</p>
         </div>
       ) : (
         <>

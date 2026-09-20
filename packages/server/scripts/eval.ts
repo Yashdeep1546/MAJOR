@@ -76,7 +76,7 @@ async function runEval() {
     });
 
     const startTime = performance.now();
-    let actualTool: string | null = null;
+    let actualToolsStr: string = 'None';
     let success = false;
     
     try {
@@ -86,25 +86,15 @@ async function runEval() {
         userId: user.id,
       });
 
-      const dbActions = await auditService.getBySessionId(result.sessionId);
-      const planAction = dbActions.find((a) => a.state === 'PLAN' || (a.state === 'EXECUTE' && a.toolName));
-      
-      // Look at the final execute state or the plan state to see what tool was chosen
-      actualTool = planAction?.toolName ?? null;
+      const toolsUsed = result.toolsUsed || [];
+      actualToolsStr = toolsUsed.length > 0 ? toolsUsed.join(' -> ') : 'None';
 
-      // Special handling for duplicates or ambiguous
-      // If expectedTool is null, we pass if actualTool is null or if the LLM reasonably chose a tool (e.g. list_tasks).
-      // We will strictly check expected vs actual, but for 'null' it's tricky. Let's just do an exact match or close enough for this test.
-      // We will count it as passed if expectedTool === actualTool
-      if (test.expectedTool === actualTool) {
-        success = true;
-      } else if (test.expectedTool === null && actualTool === 'create_task') {
-        // sometimes it hallucinates a task. Let's just mark it.
-        success = false;
-      } else if (test.expectedTool === 'create_task' && actualTool === null) {
-        success = false;
+      const expectedStr = test.expectedTool || 'None';
+
+      if (expectedStr === 'None') {
+        success = toolsUsed.length === 0 || toolsUsed[0] === 'None';
       } else {
-        success = false;
+        success = toolsUsed.includes(test.expectedTool as string);
       }
 
       if (success) passed++;
@@ -119,12 +109,12 @@ async function runEval() {
     results.push({
       prompt: test.prompt,
       expected: test.expectedTool || 'None',
-      actual: actualTool || 'None',
+      actual: actualToolsStr,
       latency,
       pass: success
     });
 
-    console.log(`  Expected: ${test.expectedTool || 'None'}, Actual: ${actualTool || 'None'} -> ${success ? '✅' : '❌'}`);
+    console.log(`  Expected: ${test.expectedTool || 'None'}, Actual: ${actualToolsStr} -> ${success ? '✅' : '❌'}`);
     
     // Wait 25 seconds between prompts to strictly respect 5 RPM (and multiple state calls per prompt)
     await new Promise((resolve) => setTimeout(resolve, 25000));

@@ -17,6 +17,7 @@ export interface OrchestratorOutput {
   response: string;
   sessionId: string;
   steps: StepResult[];
+  toolsUsed?: string[];
 }
 
 export class OrchestratorEngine {
@@ -64,11 +65,15 @@ export class OrchestratorEngine {
     let executeOutput: unknown;
     let finalPlan: any = null;
     let loopTimeout = false;
+    const toolsUsed: string[] = [];
 
     let planPrompt = [
       'You are AETHER, an intelligent personal assistant.',
       'Based on this understanding of the user\'s request, decide which tool to use.',
-      'If the request is ambiguous, lacks required parameters, or requires clarification, do not guess. Respond with text asking the user for clarification.',
+      'If the request requires acting on a specific task by name but you don\'t know its ID, call `list_tasks` first to find it.',
+      'If the user provides a task ID, always attempt to use the tool with that ID.',
+      'If the request is contradictory or self-correcting, synthesize the final intent instead of asking for clarification.',
+      'Only if the request is completely ambiguous or lacks parameters that cannot be looked up, respond with text asking for clarification.',
       '',
       `Understanding: ${understand.text}`,
       `Original message: ${input.userMessage}`,
@@ -120,47 +125,45 @@ export class OrchestratorEngine {
         }
 
         executeOutput = executeResult;
+        toolsUsed.push(plan.toolName);
 
-        // If the tool was list_tasks, append the result to context and loop back to PLAN
-        if (plan.toolName === 'list_tasks') {
-          const execLatency = Math.round(performance.now() - execStart);
-          const executeStep: StepResult = {
-            state: 'EXECUTE',
-            output: executeOutput,
-            toolName: plan.toolName ?? undefined,
-            toolInput: plan.toolArgs ?? undefined,
-            toolOutput: executeOutput,
-            modelUsed: 'none',
-            latencyMs: execLatency,
-            tokenCount: 0,
-          };
-          steps.push(executeStep);
-          await this.logStep(input.conversationId, sessionId, executeStep);
+        const execLatency = Math.round(performance.now() - execStart);
+        const executeStep: StepResult = {
+          state: 'EXECUTE',
+          output: executeOutput,
+          toolName: plan.toolName ?? undefined,
+          toolInput: plan.toolArgs ?? undefined,
+          toolOutput: executeOutput,
+          modelUsed: 'none',
+          latencyMs: execLatency,
+          tokenCount: 0,
+        };
+        steps.push(executeStep);
+        await this.logStep(input.conversationId, sessionId, executeStep);
 
-          planPrompt += `\n\nPrevious tool call "${plan.toolName}" returned:\n${JSON.stringify(executeOutput)}\n\nNow, decide the next step. If the user's intent is fully satisfied, respond with text summarizing the result.`;
-          continue; // Loop back to PLAN
-        }
+        planPrompt += `\n\nPrevious tool call "${plan.toolName}" returned:\n${JSON.stringify(executeOutput)}\n\nNow, decide the next step. If you need to perform more actions, call the appropriate tool. If the user's intent is fully satisfied, respond with text summarizing the result.`;
+        continue; // Loop back to PLAN
       } else {
         // No tool call — the model answered directly
         executeOutput = { directResponse: plan.text };
+        
+        const execLatency = Math.round(performance.now() - execStart);
+        const executeStep: StepResult = {
+          state: 'EXECUTE',
+          output: executeOutput,
+          toolName: undefined,
+          toolInput: undefined,
+          toolOutput: executeOutput,
+          modelUsed: 'none',
+          latencyMs: execLatency,
+          tokenCount: 0,
+        };
+        steps.push(executeStep);
+        await this.logStep(input.conversationId, sessionId, executeStep);
+
+        // Model chose to respond with text, so break the loop
+        break;
       }
-
-      const execLatency = Math.round(performance.now() - execStart);
-      const executeStep: StepResult = {
-        state: 'EXECUTE',
-        output: executeOutput,
-        toolName: plan.toolName ?? undefined,
-        toolInput: plan.toolArgs ?? undefined,
-        toolOutput: executeOutput,
-        modelUsed: 'none',
-        latencyMs: execLatency,
-        tokenCount: 0,
-      };
-      steps.push(executeStep);
-      await this.logStep(input.conversationId, sessionId, executeStep);
-
-      // Successful execution (that wasn't a multi-step task like list_tasks) or direct response, break the loop
-      break;
     }
 
     if (iterations >= MAX_ITERATIONS && !executeOutput) {
@@ -204,6 +207,7 @@ export class OrchestratorEngine {
         response: 'I encountered an error while trying to process that request (Loop Timeout). Please try rephrasing.',
         sessionId,
         steps,
+        toolsUsed,
       };
     }
 
@@ -211,6 +215,7 @@ export class OrchestratorEngine {
       response: critique.text,
       sessionId,
       steps,
+      toolsUsed,
     };
   }
 

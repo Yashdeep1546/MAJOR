@@ -3,51 +3,70 @@
    ═══════════════════════════════════════════════════════ */
 
 :root {
-  /* ── Base palette ───────────────────────────────────── */
-  --bg-primary:    hsl(222, 30%, 8%);
-  --bg-secondary:  hsl(222, 25%, 12%);
-  --bg-surface:    hsl(222, 22%, 16%);
-  --bg-elevated:   hsl(222, 20%, 20%);
-  --bg-hover:      hsl(222, 20%, 24%);
+  /* ── AETHER Design System Tokens ──────────────────────── */
+  /* Background & Neutral Scale */
+  --bg-root: hsl(220, 10%, 8%);
+  --bg-surface: hsl(220, 10%, 12%);
+  --bg-surface-hover: hsl(220, 10%, 16%);
+  --border-subtle: hsl(220, 10%, 20%);
+  --border-strong: hsl(220, 10%, 30%);
 
-  /* ── Text ───────────────────────────────────────────── */
-  --text-primary:   hsl(220, 20%, 92%);
-  --text-secondary: hsl(220, 15%, 60%);
-  --text-muted:     hsl(220, 12%, 42%);
+  /* Text */
+  --text-primary: hsl(220, 10%, 95%);
+  --text-secondary: hsl(220, 10%, 65%);
+  --text-tertiary: hsl(220, 10%, 45%);
 
-  /* ── Accent (electric cyan-blue) ────────────────────── */
-  --accent:        hsl(200, 95%, 55%);
-  --accent-dim:    hsl(200, 80%, 35%);
-  --accent-glow:   hsl(200, 100%, 65%);
-  --accent-bg:     hsla(200, 95%, 55%, 0.10);
+  /* Brand & Semantics */
+  --primary: hsl(217, 91%, 60%);
+  --primary-bg: hsla(217, 91%, 60%, 0.1);
+  --success: hsl(142, 70%, 45%);
+  --success-bg: hsla(142, 70%, 45%, 0.1);
+  --warning: hsl(38, 92%, 50%);
+  --warning-bg: hsla(38, 92%, 50%, 0.1);
+  --error: hsl(0, 84%, 60%);
+  --error-bg: hsla(0, 84%, 60%, 0.1);
 
-  /* ── Semantic ───────────────────────────────────────── */
-  --success:       hsl(155, 70%, 50%);
-  --warning:       hsl(40, 90%, 55%);
-  --error:         hsl(0, 75%, 60%);
-  --urgent:        hsl(340, 80%, 55%);
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
 
-  /* ── Priority colors ────────────────────────────────── */
-  --priority-low:    hsl(220, 15%, 50%);
-  --priority-medium: hsl(200, 80%, 55%);
-  --priority-high:   hsl(35, 90%, 55%);
-  --priority-urgent: hsl(0, 75%, 58%);
+  /* Motion */
+  --duration-fast: 150ms;
+  --duration-std: 200ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-linear: linear;
 
-  /* ── Layout ─────────────────────────────────────────── */
+  /* Legacy Mappings (to avoid breaking entire app layout) */
+  --bg-primary: var(--bg-root);
+  --bg-secondary: var(--bg-surface);
+  --bg-elevated: var(--bg-surface-hover);
+  --bg-hover: var(--bg-surface-hover);
+  --text-muted: var(--text-tertiary);
+  --accent: var(--primary);
+  --accent-dim: hsl(217, 91%, 40%);
+  --accent-glow: hsl(217, 91%, 70%);
+  --accent-bg: var(--primary-bg);
+  --urgent: var(--error);
+  --glass-border: var(--border-subtle);
+  --duration: var(--duration-std);
+  --ease-out: var(--ease-standard);
+
+  /* Layout */
   --sidebar-width: 240px;
-  --radius-sm:     6px;
-  --radius-md:     10px;
-  --radius-lg:     16px;
-  --radius-full:   9999px;
-
-  /* ── Glass ──────────────────────────────────────────── */
-  --glass-bg:      hsla(222, 25%, 14%, 0.7);
-  --glass-border:  hsla(220, 20%, 30%, 0.4);
-  --glass-blur:    12px;
-
-  /* ── Transitions ────────────────────────────────────── */
-  --ease-out:      cubic-bezier(0.16, 1, 0.3, 1);
-  --duration:      200ms;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+  
+  /* Priority Colors */
+  --priority-low: hsl(220, 15%, 50%);
+  --priority-medium: var(--primary);
+  --priority-high: var(--warning);
+  --priority-urgent: var(--error);
 }
 
 /* ── Reset ──────────────────────────────────────────── */
@@ -58,7 +77,7 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   background: var(--bg-primary);
   color: var(--text-primary);
   line-height: 1.6;
@@ -516,7 +535,8 @@ body {
   padding: 8px 12px;
   background: var(--bg-primary);
   border-radius: var(--radius-sm);
-  font-family: 'Fira Code', 'Cascadia Code', monospace;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
   font-size: 0.68rem;
   color: var(--text-secondary);
   max-height: 120px;
@@ -704,3 +724,75 @@ body {
 .empty-state p {
   font-size: 0.88rem;
 }
+
+ / *    % %  T o a s t   S y s t e m    % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %  * / 
+ . t o a s t - c o n t a i n e r   { 
+     p o s i t i o n :   f i x e d ; 
+     t o p :   v a r ( - - s p a c e - 4 ) ; 
+     r i g h t :   v a r ( - - s p a c e - 4 ) ; 
+     z - i n d e x :   9 9 9 9 ; 
+     d i s p l a y :   f l e x ; 
+     f l e x - d i r e c t i o n :   c o l u m n ; 
+     g a p :   v a r ( - - s p a c e - 2 ) ; 
+     p o i n t e r - e v e n t s :   n o n e ; 
+ } 
+ 
+ . t o a s t   { 
+     p o i n t e r - e v e n t s :   a u t o ; 
+     w i d t h :   3 0 0 p x ; 
+     b a c k g r o u n d :   v a r ( - - b g - s u r f a c e ) ; 
+     b o r d e r :   1 p x   s o l i d   v a r ( - - b o r d e r - s u b t l e ) ; 
+     b o r d e r - r a d i u s :   v a r ( - - r a d i u s - m d ) ; 
+     p a d d i n g :   v a r ( - - s p a c e - 3 )   v a r ( - - s p a c e - 4 ) ; 
+     b o x - s h a d o w :   0   4 p x   1 2 p x   r g b a ( 0 , 0 , 0 , 0 . 5 ) ; 
+     a n i m a t i o n :   t o a s t - e n t e r   v a r ( - - d u r a t i o n - s t d )   v a r ( - - e a s e - s t a n d a r d ) ; 
+     t r a n s i t i o n :   o p a c i t y   v a r ( - - d u r a t i o n - f a s t ) ,   t r a n s f o r m   v a r ( - - d u r a t i o n - s t d ) ; 
+     d i s p l a y :   f l e x ; 
+     f l e x - d i r e c t i o n :   c o l u m n ; 
+     g a p :   v a r ( - - s p a c e - 1 ) ; 
+ } 
+ 
+ . t o a s t . t o a s t - e x i t   { 
+     o p a c i t y :   0 ; 
+ } 
+ 
+ @ k e y f r a m e s   t o a s t - e n t e r   { 
+     f r o m   { 
+         o p a c i t y :   0 ; 
+         t r a n s f o r m :   t r a n s l a t e X ( 1 0 0 % ) ; 
+     } 
+     t o   { 
+         o p a c i t y :   1 ; 
+         t r a n s f o r m :   t r a n s l a t e X ( 0 ) ; 
+     } 
+ } 
+ 
+ . t o a s t - i n f o   { 
+     b a c k g r o u n d :   v a r ( - - p r i m a r y - b g ) ; 
+     b o r d e r - c o l o r :   v a r ( - - p r i m a r y ) ; 
+ } 
+ . t o a s t - i n f o   . t o a s t - t i t l e   {   c o l o r :   v a r ( - - p r i m a r y ) ;   } 
+ 
+ . t o a s t - w a r n i n g   { 
+     b a c k g r o u n d :   v a r ( - - w a r n i n g - b g ) ; 
+     b o r d e r - c o l o r :   v a r ( - - w a r n i n g ) ; 
+ } 
+ . t o a s t - w a r n i n g   . t o a s t - t i t l e   {   c o l o r :   v a r ( - - w a r n i n g ) ;   } 
+ 
+ . t o a s t - e r r o r   { 
+     b a c k g r o u n d :   v a r ( - - e r r o r - b g ) ; 
+     b o r d e r - c o l o r :   v a r ( - - e r r o r ) ; 
+ } 
+ . t o a s t - e r r o r   . t o a s t - t i t l e   {   c o l o r :   v a r ( - - e r r o r ) ;   } 
+ 
+ . t o a s t - t i t l e   { 
+     f o n t - w e i g h t :   6 0 0 ; 
+     f o n t - s i z e :   0 . 8 8 r e m ; 
+ } 
+ 
+ . t o a s t - m e s s a g e   { 
+     f o n t - s i z e :   0 . 8 r e m ; 
+     c o l o r :   v a r ( - - t e x t - s e c o n d a r y ) ; 
+ } 
+  
+ 

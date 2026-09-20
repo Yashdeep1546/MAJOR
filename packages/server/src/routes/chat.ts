@@ -8,6 +8,51 @@ const engine = new OrchestratorEngine();
 
 const DEFAULT_USER_ID = '00000000-0000-0000-0000-000000000001';
 
+router.get('/recent', async (req, res, next) => {
+  try {
+    // Find the most recent conversation for the default user
+    const conversation = await prisma.conversation.findFirst({
+      where: { userId: DEFAULT_USER_ID },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!conversation) {
+      return res.json({ conversationId: null, messages: [] });
+    }
+
+    const messages = await prisma.message.findMany({
+      where: { conversationId: conversation.id },
+      orderBy: { createdAt: 'asc' },
+    });
+    
+    const actions = await prisma.agentAction.findMany({
+      where: { conversationId: conversation.id, state: 'CRITIQUE' },
+      select: { sessionId: true, createdAt: true },
+    });
+
+    const formattedMessages = messages.map((m) => {
+      const action = m.role === 'ASSISTANT' 
+        ? actions.find(a => Math.abs(a.createdAt.getTime() - m.createdAt.getTime()) < 5000)
+        : null;
+
+      return {
+        id: m.id,
+        role: m.role.toLowerCase(),
+        content: m.content,
+        timestamp: m.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        sessionId: action?.sessionId,
+      };
+    });
+
+    res.json({
+      conversationId: conversation.id,
+      messages: formattedMessages,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post('/', async (req, res, next) => {
   try {
     const { message, conversationId } = req.body;

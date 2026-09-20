@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import ChatMessage from '../components/ChatMessage';
 import TraceViewer from '../components/TraceViewer';
+import { useToast } from '../components/ToastContext';
 
 interface Message {
   id: string;
@@ -15,8 +16,36 @@ export default function ChatPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  
   const [traceSessionId, setTraceSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const activeRequestRef = useRef<AbortController | null>(null);
+  const { showToast } = useToast();
+
+  // Load chat history from DB on mount
+  useEffect(() => {
+    setLoading(true);
+    fetch(`/api/chat/recent`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.conversationId) {
+          setConversationId(data.conversationId);
+          setMessages(data.messages || []);
+        }
+      })
+      .catch(err => {
+        console.error('Failed to load chat history', err);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (activeRequestRef.current) {
+        activeRequestRef.current.abort('unmount');
+      }
+    };
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -37,12 +66,34 @@ export default function ChatPage() {
     setInput('');
     setLoading(true);
 
+    const controller = new AbortController();
+    activeRequestRef.current = controller;
+    
+    let isTimeout = false;
+    const timeoutId = setTimeout(() => {
+      isTimeout = true;
+      controller.abort('timeout');
+    }, 60000); // 60s orchestrator loop timeout
+
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, conversationId }),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        if (res.status === 429) {
+          showToast({ title: 'Rate Limited', message: 'Gemini API rate limit exceeded. Please wait a moment.', type: 'warning' });
+        } else {
+          showToast({ title: 'Server Error', message: `Backend failed to process request (${res.status})`, type: 'error' });
+        }
+        return;
+      }
+
       const data = await res.json();
 
       if (!conversationId) setConversationId(data.conversationId);
@@ -55,15 +106,20 @@ export default function ChatPage() {
         sessionId: data.sessionId,
       };
       setMessages((prev) => [...prev, assistantMsg]);
-    } catch (err) {
-      const errorMsg: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: 'Sorry, something went wrong. Please try again.',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages((prev) => [...prev, errorMsg]);
-    } finally {
+      activeRequestRef.current = null;
+      setLoading(false);
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        if (isTimeout) {
+          showToast({ title: 'Request Timeout', message: 'The orchestrator took too long to respond (>60s).', type: 'error' });
+        } else {
+          return; // Aborted by unmount, halt execution and prevent state updates
+        }
+      } else {
+        showToast({ title: 'Network Error', message: 'Failed to connect to the AETHER server.', type: 'error' });
+      }
+      activeRequestRef.current = null;
       setLoading(false);
     }
   }

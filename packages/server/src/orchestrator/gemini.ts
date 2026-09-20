@@ -19,6 +19,7 @@ export class GeminiClient {
       tools: [{
         functionDeclarations: getGeminiFunctionDeclarations() as FunctionDeclaration[],
       }],
+      systemInstruction: "Colloquial or broad requests to view or inspect items (e.g., 'list things', 'show my stuff', 'what do I have') are valid queries and must invoke `list_tasks`.\nIf the user issues contradictory instructions or self-corrects within a single prompt (e.g., 'Create a high priority task and then make it low priority'), synthesize the final desired state and execute the intended action (e.g., call `create_task` with priority: LOW).",
     });
   }
 
@@ -39,8 +40,14 @@ export class GeminiClient {
         return await fn();
       } catch (err: any) {
         const msg = String(err?.message || err);
-        const isRateLimit = msg.includes('429') || msg.includes('Too Many Requests') || msg.includes('Quota exceeded');
+        const isQuotaExceeded = msg.includes('Quota exceeded');
+        const isRateLimit = msg.includes('429') || msg.includes('Too Many Requests');
         const isUnavailable = msg.includes('503') || msg.includes('high demand') || msg.includes('Service Unavailable');
+
+        if (isQuotaExceeded) {
+          console.warn('[GeminiClient] Hard API quota exceeded. Failing immediately.');
+          throw err;
+        }
 
         if ((isRateLimit || isUnavailable) && attempt < maxRetries) {
           // Extract retryDelay if available in error message (e.g. "retryDelay":"48s")
@@ -48,7 +55,7 @@ export class GeminiClient {
           const serverDelaySec = delayMatch ? parseInt(delayMatch[1], 10) : 0;
           const waitMs = serverDelaySec > 0 
             ? (serverDelaySec + 2) * 1000 
-            : Math.pow(2, attempt + 1) * 10000; // 20s, 40s, 80s
+            : Math.pow(2, attempt) * 2000; // 2s, 4s, 8s, 16s, 32s
 
           console.warn(`[GeminiClient] Hit rate limit/overload (${isRateLimit ? '429' : '503'}). Backing off for ${Math.round(waitMs / 1000)}s before retry ${attempt + 1}/${maxRetries}...`);
           await new Promise((r) => setTimeout(r, waitMs));
