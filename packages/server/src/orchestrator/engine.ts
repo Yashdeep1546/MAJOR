@@ -68,6 +68,7 @@ export class OrchestratorEngine {
     let planPrompt = [
       'You are AETHER, an intelligent personal assistant.',
       'Based on this understanding of the user\'s request, decide which tool to use.',
+      'If the request is ambiguous, lacks required parameters, or requires clarification, do not guess. Respond with text asking the user for clarification.',
       '',
       `Understanding: ${understand.text}`,
       `Original message: ${input.userMessage}`,
@@ -119,6 +120,26 @@ export class OrchestratorEngine {
         }
 
         executeOutput = executeResult;
+
+        // If the tool was list_tasks, append the result to context and loop back to PLAN
+        if (plan.toolName === 'list_tasks') {
+          const execLatency = Math.round(performance.now() - execStart);
+          const executeStep: StepResult = {
+            state: 'EXECUTE',
+            output: executeOutput,
+            toolName: plan.toolName ?? undefined,
+            toolInput: plan.toolArgs ?? undefined,
+            toolOutput: executeOutput,
+            modelUsed: 'none',
+            latencyMs: execLatency,
+            tokenCount: 0,
+          };
+          steps.push(executeStep);
+          await this.logStep(input.conversationId, sessionId, executeStep);
+
+          planPrompt += `\n\nPrevious tool call "${plan.toolName}" returned:\n${JSON.stringify(executeOutput)}\n\nNow, decide the next step. If the user's intent is fully satisfied, respond with text summarizing the result.`;
+          continue; // Loop back to PLAN
+        }
       } else {
         // No tool call — the model answered directly
         executeOutput = { directResponse: plan.text };
@@ -138,7 +159,7 @@ export class OrchestratorEngine {
       steps.push(executeStep);
       await this.logStep(input.conversationId, sessionId, executeStep);
 
-      // Successful execution or direct response, break the loop
+      // Successful execution (that wasn't a multi-step task like list_tasks) or direct response, break the loop
       break;
     }
 
