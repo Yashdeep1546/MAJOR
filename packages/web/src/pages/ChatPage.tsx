@@ -205,7 +205,7 @@ export default function ChatPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Describe a task, or ask what's on the books&hellip;"
+              placeholder="Describe a task, or ask what's on your list&hellip;"
               rows={1}
               disabled={loading}
             />

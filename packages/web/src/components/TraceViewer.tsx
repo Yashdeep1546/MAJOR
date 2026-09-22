@@ -17,6 +17,13 @@ interface TraceViewerProps {
   onClose: () => void;
 }
 
+const STATE_LABELS: Record<string, string> = {
+  UNDERSTAND: 'Understand',
+  PLAN: 'Plan',
+  EXECUTE: 'Execute',
+  CRITIQUE: 'Critique',
+};
+
 export default function TraceViewer({ sessionId, onClose }: TraceViewerProps) {
   const [steps, setSteps] = useState<TraceStep[]>([]);
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
@@ -66,7 +73,7 @@ export default function TraceViewer({ sessionId, onClose }: TraceViewerProps) {
                 onClick={() => setExpandedStep(expandedStep === step.id ? null : step.id)}
               >
                 <div className="trace-step-header">
-                  <span className="trace-step-state">{step.state}</span>
+                  <span className="trace-step-state">{STATE_LABELS[step.state] ?? step.state}</span>
                   <span className="trace-step-latency">{step.latencyMs ?? 0} ms</span>
                 </div>
                 <div className="trace-tags">
