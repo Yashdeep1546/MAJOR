@@ -1,27 +1,42 @@
 import { NavLink } from 'react-router-dom';
 
+const SECTIONS = [
+  { to: '/chat', index: '01', label: 'Conversation' },
+  { to: '/tasks', index: '02', label: 'Tasks' },
+];
+
 export default function Sidebar() {
   return (
     <aside className="sidebar">
-      <div className="sidebar-logo">
+      <div className="sidebar-brand">
         <h1>AETHER</h1>
-        <p>AI Assistant</p>
+        <p>Task Operations &middot; Phase I</p>
       </div>
+
+      <div className="sidebar-section-label">Workspace</div>
       <nav className="sidebar-nav">
-        <NavLink to="/chat" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-          Chat
-        </NavLink>
-        <NavLink to="/tasks" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-            <path d="M9 11l3 3L22 4" />
-          </svg>
-          Tasks
-        </NavLink>
+        {SECTIONS.map((s) => (
+          <NavLink
+            key={s.to}
+            to={s.to}
+            className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+          >
+            <span className="sidebar-link-num">{s.index}</span>
+            <span>{s.label}</span>
+          </NavLink>
+        ))}
       </nav>
+
+      <div className="sidebar-foot">
+        <div className="sidebar-status">
+          <span className="status-flag" />
+          <span>All systems nominal</span>
+        </div>
+        <p className="sidebar-build">
+          Build 0.1.0 &mdash; Phase I<br />
+          Understand &rsaquo; Plan &rsaquo; Execute &rsaquo; Critique
+        </p>
+      </div>
     </aside>
   );
 }

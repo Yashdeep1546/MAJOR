@@ -35,29 +35,26 @@ export default function TraceViewer({ sessionId, onClose }: TraceViewerProps) {
   return (
     <div className="trace-panel">
       <div className="trace-header">
-        <h3>Trace Viewer</h3>
-        <button className="trace-close" onClick={onClose}>✕</button>
+        <div>
+          <h3 className="trace-title">Execution trace</h3>
+          <span className="trace-session">Session {sessionId.slice(0, 8)}</span>
+        </div>
+        <button className="trace-close" onClick={onClose} aria-label="Close trace">&times;</button>
       </div>
 
       {loading ? (
         <div className="trace-steps">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="trace-step" style={{ pointerEvents: 'none' }}>
-              <div className="trace-step-header" style={{ opacity: 0.5, animation: `pulse-dot 1.5s infinite ${i * 150}ms` }}>
-                <span style={{ width: '80px', height: '14px', background: 'var(--bg-elevated)', borderRadius: '4px', display: 'inline-block' }}></span>
-                <span style={{ width: '40px', height: '12px', background: 'var(--bg-elevated)', borderRadius: '4px', display: 'inline-block' }}></span>
-              </div>
-              <div className="trace-step-details" style={{ opacity: 0.5, animation: `pulse-dot 1.5s infinite ${(i * 150) + 100}ms` }}>
-                <span className="trace-tag" style={{ width: '60px', height: '18px', background: 'var(--bg-elevated)', border: 'none' }}></span>
-                <span className="trace-tag" style={{ width: '90px', height: '18px', background: 'var(--bg-elevated)', border: 'none' }}></span>
-              </div>
+            <div key={i} className="trace-step skeleton">
+              <div className="sk sk-title" />
+              <div className="sk sk-tags" />
             </div>
           ))}
         </div>
       ) : steps.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">📄</div>
-          <p>No trace data available.</p>
+        <div className="tasks-empty">
+          <h3 className="tasks-empty-title">No trace recorded.</h3>
+          <p className="tasks-empty-sub">This exchange predates action logging.</p>
         </div>
       ) : (
         <>
@@ -70,17 +67,17 @@ export default function TraceViewer({ sessionId, onClose }: TraceViewerProps) {
               >
                 <div className="trace-step-header">
                   <span className="trace-step-state">{step.state}</span>
-                  <span className="trace-step-latency">{step.latencyMs ?? 0}ms</span>
+                  <span className="trace-step-latency">{step.latencyMs ?? 0} ms</span>
                 </div>
-                <div className="trace-step-details">
+                <div className="trace-tags">
                   {step.modelUsed && step.modelUsed !== 'none' && (
-                    <span className="trace-tag">🧠 {step.modelUsed}</span>
+                    <span className="trace-tag"><b>model</b>{step.modelUsed}</span>
                   )}
                   {(step.tokenCount ?? 0) > 0 && (
-                    <span className="trace-tag">🪙 {step.tokenCount} tokens</span>
+                    <span className="trace-tag"><b>tokens</b>{step.tokenCount}</span>
                   )}
                   {step.toolName && (
-                    <span className="trace-tag">🔧 {step.toolName}</span>
+                    <span className="trace-tag"><b>tool</b>{step.toolName}</span>
                   )}
                 </div>
                 {expandedStep === step.id && (
@@ -91,7 +88,7 @@ export default function TraceViewer({ sessionId, onClose }: TraceViewerProps) {
                     {step.toolOutput ? (
                       <>Output: {JSON.stringify(step.toolOutput, null, 2)}</>
                     ) : null}
-                    {!step.toolInput && !step.toolOutput && 'No tool data for this step'}
+                    {!step.toolInput && !step.toolOutput && 'No tool data for this step.'}
                   </div>
                 )}
               </div>
@@ -103,8 +100,8 @@ export default function TraceViewer({ sessionId, onClose }: TraceViewerProps) {
               <span className="trace-stat-label">Steps</span>
             </div>
             <div className="trace-stat">
-              <span className="trace-stat-value">{totalLatency}ms</span>
-              <span className="trace-stat-label">Total Latency</span>
+              <span className="trace-stat-value">{totalLatency} ms</span>
+              <span className="trace-stat-label">Latency</span>
             </div>
             <div className="trace-stat">
               <span className="trace-stat-value">{totalTokens}</span>

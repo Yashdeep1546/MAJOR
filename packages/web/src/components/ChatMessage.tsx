@@ -8,21 +8,19 @@ interface ChatMessageProps {
 
 export default function ChatMessage({ role, content, timestamp, sessionId, onViewTrace }: ChatMessageProps) {
   return (
-    <div className={`message ${role}`}>
-      <div className="message-avatar">
-        {role === 'user' ? 'U' : 'A'}
+    <div className={`msg ${role}`}>
+      <div className="msg-label">
+        <span className="msg-name">{role === 'user' ? 'You' : 'Aether'}</span>
+        {timestamp && <span className="msg-time">{timestamp}</span>}
       </div>
-      <div className="message-body">
-        <div className="message-content">{content}</div>
-        <div className="message-meta">
-          {timestamp && <span className="message-time">{timestamp}</span>}
-          {role === 'assistant' && sessionId && onViewTrace && (
-            <button className="trace-toggle" onClick={() => onViewTrace(sessionId)}>
-              ◉ View Trace
-            </button>
-          )}
+      <div className="msg-content">{content}</div>
+      {role === 'assistant' && sessionId && onViewTrace && (
+        <div className="msg-actions">
+          <button className="trace-toggle" onClick={() => onViewTrace(sessionId)}>
+            View execution trace
+          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 }

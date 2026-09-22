@@ -11,14 +11,21 @@ interface Message {
   sessionId?: string;
 }
 
+const SUGGESTIONS = [
+  'Add a task to review the quarterly budget',
+  'What should I do today?',
+  'Mark the invoices task as done',
+];
+
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  
+
   const [traceSessionId, setTraceSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const activeRequestRef = useRef<AbortController | null>(null);
   const { showToast } = useToast();
 
@@ -68,7 +75,7 @@ export default function ChatPage() {
 
     const controller = new AbortController();
     activeRequestRef.current = controller;
-    
+
     let isTimeout = false;
     const timeoutId = setTimeout(() => {
       isTimeout = true;
@@ -82,7 +89,7 @@ export default function ChatPage() {
         body: JSON.stringify({ message: text, conversationId }),
         signal: controller.signal
       });
-      
+
       clearTimeout(timeoutId);
 
       if (!res.ok) {
@@ -131,19 +138,39 @@ export default function ChatPage() {
     }
   }
 
+  function applySuggestion(prompt: string) {
+    setInput(prompt);
+    inputRef.current?.focus();
+  }
+
   return (
     <div className="chat-page">
       <div className="chat-container">
-        <div className="chat-header">
-          <div className="status-dot" />
-          <h2>AETHER Chat</h2>
-        </div>
+        <header className="chat-header">
+          <h2 className="chat-title">Conversation</h2>
+          <div className="chat-header-meta">
+            <span className="status-flag" />
+            <span>Orchestrator online</span>
+          </div>
+        </header>
 
         <div className="chat-messages">
-          {messages.length === 0 && (
+          {messages.length === 0 && !loading && (
             <div className="empty-state">
-              <div className="empty-state-icon">🌀</div>
-              <p>Ask AETHER anything — try "Create a task to review the project"</p>
+              <h3 className="empty-state-title">What needs doing?</h3>
+              <p className="empty-state-sub">
+                Describe a task in plain language. Aether understands the request,
+                plans the work, executes it against your task list, and reports
+                back &mdash; every step is logged and auditable.
+              </p>
+              <div className="empty-state-hint">Try one of these</div>
+              <div className="empty-prompts">
+                {SUGGESTIONS.map((s) => (
+                  <button key={s} className="empty-prompt" onClick={() => applySuggestion(s)}>
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {messages.map((msg) => (
@@ -157,12 +184,13 @@ export default function ChatPage() {
             />
           ))}
           {loading && (
-            <div className="message assistant">
-              <div className="message-avatar">A</div>
-              <div className="message-body">
-                <div className="message-content">
-                  <div className="loading-dots"><span /><span /><span /></div>
-                </div>
+            <div className="working">
+              <div className="msg-label">
+                <span className="msg-name">Aether</span>
+              </div>
+              <div className="working-box">
+                <span className="working-label">Understanding &middot; planning &middot; executing</span>
+                <div className="working-bar" />
               </div>
             </div>
           )}
@@ -172,11 +200,12 @@ export default function ChatPage() {
         <div className="chat-input-area">
           <div className="chat-input-wrapper">
             <textarea
+              ref={inputRef}
               className="chat-input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type your message..."
+              placeholder="Describe a task, or ask what's on the books&hellip;"
               rows={1}
               disabled={loading}
             />
@@ -184,13 +213,15 @@ export default function ChatPage() {
               className="chat-send-btn"
               onClick={handleSend}
               disabled={!input.trim() || loading}
+              aria-label="Send message"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13" />
-                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
               </svg>
             </button>
           </div>
+          <div className="chat-input-hint">Enter &mdash; send &nbsp;&middot;&nbsp; Shift + Enter &mdash; new line</div>
         </div>
       </div>
 
