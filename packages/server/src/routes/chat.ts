@@ -136,4 +136,15 @@ router.post('/', async (req, res, next) => {
   }
 });
 
+router.delete('/', async (req, res, next) => {
+  try {
+    await prisma.agentAction.deleteMany({});
+    await prisma.message.deleteMany({});
+    await prisma.conversation.deleteMany({});
+    res.json({ success: true, message: 'All chat history and audit traces cleared' });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

@@ -81,7 +81,7 @@ export default function TasksPage() {
       
       timerRef.current = setTimeout(() => fetchTasks(), nextRetry * 1000);
     }
-  }, [filter, showToast]);
+  }, [filter, showToast, degraded]);
 
   useEffect(() => {
     setLoading(true);
@@ -102,64 +102,42 @@ export default function TasksPage() {
   }, [retrySeconds]);
 
   return (
-    <div className="tasks-page" style={{ position: 'relative' }}>
+    <div className="tasks-page">
       {degraded && (
-        <div style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 50,
-          background: 'var(--warning-bg)',
-          borderBottom: '1px solid var(--warning)',
-          padding: '8px 16px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '16px',
-          borderRadius: 'var(--radius-md)'
-        }}>
-          <span style={{ fontSize: '0.88rem', color: 'var(--warning)', fontWeight: 500 }}>
-            ⚠️ Connection lost. Showing cached data. {retrySeconds ? `Retrying in ${retrySeconds}s...` : 'Retrying...'}
+        <div className="tasks-degraded-banner">
+          <span className="degraded-text">
+            ⚠️ Connection interrupted. Showing cached data. {retrySeconds ? `Retrying in ${retrySeconds}s...` : 'Retrying...'}
           </span>
           <button 
             onClick={() => fetchTasks(true)}
-            style={{
-              background: 'var(--warning)',
-              color: 'var(--bg-root)',
-              border: 'none',
-              padding: '6px 12px',
-              borderRadius: 'var(--radius-sm)',
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'transform var(--duration-fast)'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            className="degraded-retry-btn"
           >
             Retry now
           </button>
         </div>
       )}
 
-      <div style={{ opacity: degraded ? 0.6 : 1, transition: 'opacity var(--duration-std)' }}>
-        <div className="tasks-header">
-          <h2>Tasks</h2>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {['', 'TODO', 'IN_PROGRESS', 'DONE'].map((f) => (
+      <div className="tasks-container" style={{ opacity: degraded ? 0.65 : 1 }}>
+        <div className="tasks-header-card">
+          <div className="tasks-title-area">
+            <h2>Task Management</h2>
+            <p className="tasks-subtitle">
+              Persisted in PostgreSQL database • Controlled deterministically by AETHER 6-State Loop
+            </p>
+          </div>
+          <div className="tasks-filter-group">
+            {[
+              { id: '', label: 'All Tasks' },
+              { id: 'TODO', label: 'To Do' },
+              { id: 'IN_PROGRESS', label: 'In Progress' },
+              { id: 'DONE', label: 'Completed' }
+            ].map((f) => (
               <button
-                key={f}
-                className={`sidebar-link${filter === f ? ' active' : ''}`}
-                style={{
-                  padding: '6px 14px',
-                  fontSize: '0.75rem',
-                  border: 'none',
-                  background: filter === f ? 'var(--accent-bg)' : 'transparent',
-                  color: filter === f ? 'var(--accent)' : 'var(--text-secondary)',
-                  cursor: 'pointer'
-                }}
-                onClick={() => setFilter(f)}
+                key={f.id}
+                className={`task-filter-pill${filter === f.id ? ' active' : ''}`}
+                onClick={() => setFilter(f.id)}
               >
-                {f || 'All'}
+                {f.label}
               </button>
             ))}
           </div>
@@ -168,11 +146,13 @@ export default function TasksPage() {
         {loading && tasks.length === 0 ? (
           <div className="empty-state">
             <div className="loading-dots"><span /><span /><span /></div>
+            <p style={{ marginTop: '12px', color: 'var(--text-muted)' }}>Loading tasks from database...</p>
           </div>
         ) : tasks.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">📋</div>
-            <p>No tasks yet — ask AETHER to create one via chat</p>
+            <h3>No tasks found</h3>
+            <p>Ask AETHER via Chat to create or manage your tasks dynamically.</p>
           </div>
         ) : (
           <div className="tasks-grid">

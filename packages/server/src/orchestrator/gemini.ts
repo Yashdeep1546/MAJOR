@@ -64,12 +64,14 @@ export class GeminiClient {
         const isRateLimit = msg.includes('429') || msg.includes('Too Many Requests');
         const isUnavailable = msg.includes('503') || msg.includes('high demand') || msg.includes('Service Unavailable');
 
+        const isNetworkError = msg.includes('fetch failed') || msg.includes('ECONNRESET') || msg.includes('ETIMEDOUT') || msg.includes('TypeError');
+
         if (isQuotaExceeded) {
           console.warn('[GeminiClient] Hard API quota exceeded. Failing immediately.');
           throw err;
         }
 
-        if ((isRateLimit || isUnavailable) && attempt < maxRetries) {
+        if ((isRateLimit || isUnavailable || isNetworkError) && attempt < maxRetries) {
           // Extract retryDelay if available in error message (e.g. "retryDelay":"48s")
           const delayMatch = msg.match(/retryDelay["']?:\s*["']?(\d+)s/i);
           const serverDelaySec = delayMatch ? parseInt(delayMatch[1], 10) : 0;
@@ -77,7 +79,7 @@ export class GeminiClient {
             ? (serverDelaySec + 2) * 1000 
             : Math.pow(2, attempt) * 2000; // 2s, 4s, 8s, 16s, 32s
 
-          console.warn(`[GeminiClient] Hit rate limit/overload (${isRateLimit ? '429' : '503'}). Backing off for ${Math.round(waitMs / 1000)}s before retry ${attempt + 1}/${maxRetries}...`);
+          console.warn(`[GeminiClient] Hit retryable issue (${isRateLimit ? '429' : isUnavailable ? '503' : 'Network/Fetch'}). Backing off for ${Math.round(waitMs / 1000)}s before retry ${attempt + 1}/${maxRetries}...`);
           await new Promise((r) => setTimeout(r, waitMs));
           continue;
         }
