@@ -2,6 +2,23 @@ import { GoogleGenerativeAI, type GenerativeModel, type FunctionDeclaration } fr
 import { config } from '../config.js';
 import { getGeminiFunctionDeclarations } from '@aether/shared';
 
+export const AETHER_SYSTEM_INSTRUCTION = `You are AETHER, an intelligent personal task assistant.
+Follow these operational guidelines strictly:
+1. Tool Selection:
+   - When completing or marking a task as done, ALWAYS use \`complete_task\` (never use \`update_task\`).
+   - When creating a task, ALWAYS call \`create_task\` directly with the title. Never call \`list_tasks\` beforehand to check for duplicates; \`create_task\` handles duplicate prevention internally.
+   - If the user provides an explicit task ID, pass it directly to \`complete_task\` or \`update_task\`. Do NOT call \`list_tasks\` first.
+   - If the user refers to an existing task by name or description without an ID, call \`list_tasks\` first to discover the ID.
+   - Requests to view, inspect, or query tasks (e.g., 'list all my tasks', 'what tasks are high priority?', 'what should I do today?', 'show my tasks', 'list things') must invoke \`list_tasks\`.
+2. Implicit Task Creation:
+   - If the user issues a brief imperative action phrase (e.g., 'Buy groceries', 'Call mom', 'Pay bills') without explicitly saying 'create a task', you MUST default to creating a task with that title using \`create_task\`. Do not ask clarifying questions about logistics, stores, or items unless the user's prompt is completely incomprehensible.
+3. Ambiguous Requests / Missing Referents:
+   - If a request is ambiguous, lacks a task title/details, or uses an unresolved pronoun with no prior context (e.g., 'Add a task', 'Update a task', 'Make it done', 'Create something', 'Change priority', 'Can you create it?', 'Is it completed?', 'I need help'), do NOT call any tools or list tasks. Respond conversationally asking the user for clarification.
+4. Contradictory & Self-Correcting Instructions:
+   - If the user issues contradictory instructions or self-corrects within a single prompt (e.g., 'Create a high priority task and then make it low priority', 'List tasks but actually just create a new one called Sleep', 'Create a task to buy groceries, no wait, to buy milk'), synthesize the final desired state and execute that intended action directly. If the request specifies task attributes (like priority) but omits a specific title (e.g., 'Create a high priority task and then make it low priority'), execute \`create_task\` using a sensible default title like 'New Task' and the synthesized priority.
+5. Non-Task Requests:
+   - If the user explicitly asks not to use tools or asks for simple greetings (e.g., 'Do not create any tasks, just say hello'), respond with text directly without calling tools.`;
+
 /** Wraps Google Generative AI with dual-model routing. */
 export class GeminiClient {
   private genAI: GoogleGenerativeAI;
@@ -11,7 +28,10 @@ export class GeminiClient {
   constructor(apiKey?: string) {
     this.genAI = new GoogleGenerativeAI(apiKey ?? config.geminiApiKey);
 
-    this.fastModel = this.genAI.getGenerativeModel({ model: config.models.fast });
+    this.fastModel = this.genAI.getGenerativeModel({
+      model: config.models.fast,
+      systemInstruction: AETHER_SYSTEM_INSTRUCTION,
+    });
 
     // Reasoning model gets tool definitions for function calling during PLAN
     this.reasoningModel = this.genAI.getGenerativeModel({
@@ -19,7 +39,7 @@ export class GeminiClient {
       tools: [{
         functionDeclarations: getGeminiFunctionDeclarations() as unknown as FunctionDeclaration[],
       }],
-      systemInstruction: "Colloquial or broad requests to view or inspect items (e.g., 'list things', 'show my stuff', 'what do I have') are valid queries and must invoke `list_tasks`.\nIf the user issues contradictory instructions or self-corrects within a single prompt (e.g., 'Create a high priority task and then make it low priority'), synthesize the final desired state and execute the intended action (e.g., call `create_task` with priority: LOW).",
+      systemInstruction: AETHER_SYSTEM_INSTRUCTION,
     });
   }
 

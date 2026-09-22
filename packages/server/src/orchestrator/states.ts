@@ -3,8 +3,10 @@ import type { OrchestratorState } from '@aether/shared';
 /** Maps each state to the model tier it uses. */
 export const STATE_MODEL_MAP: Record<OrchestratorState, 'fast' | 'reasoning'> = {
   UNDERSTAND: 'fast',
-  PLAN: 'reasoning',
+  PLAN: 'fast',
+  SELECT_TOOL: 'reasoning', // function-calling step
   EXECUTE: 'fast', // no LLM call, placeholder
+  OBSERVE: 'fast', // inspects tool output, decides next step
   CRITIQUE: 'fast',
   RETRY: 'fast', // no LLM call, placeholder for transition
 };
@@ -13,7 +15,9 @@ export const STATE_MODEL_MAP: Record<OrchestratorState, 'fast' | 'reasoning'> = 
 export const STATE_SEQUENCE: OrchestratorState[] = [
   'UNDERSTAND',
   'PLAN',
+  'SELECT_TOOL',
   'EXECUTE',
+  'OBSERVE',
   'CRITIQUE',
 ];
 

@@ -6,7 +6,7 @@ export type TaskStatus = z.infer<typeof TaskStatus>;
 export const Priority = z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']);
 export type Priority = z.infer<typeof Priority>;
 
-export const OrchestratorState = z.enum(['UNDERSTAND', 'PLAN', 'EXECUTE', 'CRITIQUE', 'RETRY']);
+export const OrchestratorState = z.enum(['UNDERSTAND', 'PLAN', 'SELECT_TOOL', 'EXECUTE', 'OBSERVE', 'CRITIQUE', 'RETRY']);
 export type OrchestratorState = z.infer<typeof OrchestratorState>;
 
 export const PermissionTier = z.enum(['TIER_0', 'TIER_1', 'TIER_2', 'TIER_3']);

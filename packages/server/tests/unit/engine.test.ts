@@ -20,11 +20,14 @@ describe('Orchestrator Engine State Transitions', () => {
     engine = new OrchestratorEngine(mockGemini);
   });
 
-  it('should transition through UNDERSTAND -> PLAN -> EXECUTE -> CRITIQUE', async () => {
-    // UNDERSTAND and CRITIQUE calls
+  it('should transition through UNDERSTAND -> PLAN -> SELECT_TOOL -> EXECUTE -> OBSERVE -> CRITIQUE', async () => {
+    // UNDERSTAND, PLAN, OBSERVE, and CRITIQUE calls
     mockGemini.generateText.mockImplementation(async (prompt: string) => {
       if (prompt.includes('intent')) {
         return { text: '{"intent":"test"}', latencyMs: 10, tokenCount: 10 };
+      }
+      if (prompt.includes('Evaluate')) {
+        return { text: '{"satisfied": false}', latencyMs: 10, tokenCount: 10 };
       }
       return { text: 'Final summary', latencyMs: 10, tokenCount: 10 };
     });
@@ -46,7 +49,7 @@ describe('Orchestrator Engine State Transitions', () => {
 
     vi.spyOn(registry, 'executeTool').mockResolvedValueOnce({
       success: true,
-      data: { id: 'task-1' }
+      result: { id: 'task-1' }
     });
 
     const result = await engine.run({
@@ -57,7 +60,7 @@ describe('Orchestrator Engine State Transitions', () => {
 
     // Assert state sequence
     expect(result.steps.map((s: any) => s.state)).toEqual([
-      'UNDERSTAND', 'PLAN', 'EXECUTE', 'PLAN', 'EXECUTE', 'CRITIQUE'
+      'UNDERSTAND', 'PLAN', 'SELECT_TOOL', 'EXECUTE', 'OBSERVE', 'PLAN', 'SELECT_TOOL', 'EXECUTE', 'CRITIQUE'
     ]);
     expect(result.response).toBe('Final summary');
     expect(result.toolsUsed).toEqual(['create_task']);
@@ -96,7 +99,7 @@ describe('Orchestrator Engine State Transitions', () => {
 
     // Assert RETRY path is taken
     expect(result.steps.map((s: any) => s.state)).toEqual([
-      'UNDERSTAND', 'PLAN', 'RETRY', 'PLAN', 'EXECUTE', 'CRITIQUE'
+      'UNDERSTAND', 'PLAN', 'SELECT_TOOL', 'RETRY', 'PLAN', 'SELECT_TOOL', 'EXECUTE', 'CRITIQUE'
     ]);
   });
 });

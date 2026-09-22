@@ -73,7 +73,7 @@ model AgentAction {
   conversationId String       @map("conversation_id")
   conversation   Conversation @relation(fields: [conversationId], references: [id])
   sessionId      String       @map("session_id")
-  state          String       // UNDERSTAND | PLAN | EXECUTE | CRITIQUE
+  state          String       // UNDERSTAND | PLAN | SELECT_TOOL | EXECUTE | OBSERVE | CRITIQUE | RETRY
   toolName       String?      @map("tool_name")
   toolInput      Json?        @map("tool_input")
   toolOutput     Json?        @map("tool_output")

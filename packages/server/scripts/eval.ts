@@ -49,7 +49,13 @@ const EVAL_PROMPTS = [
 ];
 
 async function runEval() {
-  console.log('🧪 AETHER Phase 1 Eval Suite (30 Prompts)\n');
+  // CLI flag: --count N to run a subset of prompts
+  const countIdx = process.argv.indexOf('--count');
+  const promptCount = countIdx !== -1 && process.argv[countIdx + 1]
+    ? Math.min(parseInt(process.argv[countIdx + 1], 10) || EVAL_PROMPTS.length, EVAL_PROMPTS.length)
+    : EVAL_PROMPTS.length;
+
+  console.log(`🧪 AETHER Phase 1 Eval Suite (${promptCount}/${EVAL_PROMPTS.length} Prompts)\n`);
 
   registerTaskTools();
 
@@ -60,15 +66,24 @@ async function runEval() {
     create: { id: '00000000-0000-0000-0000-000000000001', name: 'Test User' },
   });
 
+  // Wipe stale data so the agent doesn't detect duplicates from prior runs
+  // FK order: reminders → tasks, agentActions → messages → conversations
+  await prisma.reminder.deleteMany({});
+  await prisma.task.deleteMany({});
+  await prisma.agentAction.deleteMany({});
+  await prisma.message.deleteMany({});
+  await prisma.conversation.deleteMany({});
+  console.log('🗑️  Database wiped — clean slate for eval\n');
+
   const engine = new OrchestratorEngine();
 
   const results: any[] = [];
   let passed = 0;
   let failed = 0;
 
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < promptCount; i++) {
     const test = EVAL_PROMPTS[i];
-    console.log(`\n[${i + 1}/3] Running: "${test.prompt}"`);
+    console.log(`\n[${i + 1}/${promptCount}] Running: "${test.prompt}"`);
 
     // Create fresh conversation for each to avoid history interference
     const conv = await prisma.conversation.create({
@@ -136,7 +151,8 @@ async function runEval() {
   const reportLines = [
     '# Phase 1 Evaluation Report',
     '',
-    `**Total Prompts**: ${EVAL_PROMPTS.length}`,
+    `**Prompts Defined**: ${EVAL_PROMPTS.length}`,
+    `**Prompts Run**: ${promptCount}`,
     `**Passed**: ${passed}`,
     `**Failed**: ${failed}`,
     '',

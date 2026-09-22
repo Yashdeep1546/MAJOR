@@ -23,7 +23,7 @@ export const CreateTaskInput = z.object({
 export type CreateTaskInput = z.infer<typeof CreateTaskInput>;
 
 export const UpdateTaskInput = z.object({
-  id: z.string().uuid().describe('The ID of the task to update'),
+  id: z.string().min(1).describe('The ID of the task to update'),
   title: z.string().min(1).max(500).optional().describe('New title'),
   description: z.string().max(5000).optional().describe('New description'),
   status: TaskStatus.optional().describe('New status: TODO, IN_PROGRESS, DONE, or CANCELLED'),
@@ -39,6 +39,6 @@ export const ListTasksInput = z.object({
 export type ListTasksInput = z.infer<typeof ListTasksInput>;
 
 export const CompleteTaskInput = z.object({
-  id: z.string().uuid().describe('The ID of the task to mark as completed'),
+  id: z.string().min(1).describe('The ID of the task to mark as completed'),
 });
 export type CompleteTaskInput = z.infer<typeof CompleteTaskInput>;
