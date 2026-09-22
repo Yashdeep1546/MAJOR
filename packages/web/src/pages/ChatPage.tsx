@@ -15,12 +15,25 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [conversationId, setConversationId] = useState<string | null>(null);
   
   const [traceSessionId, setTraceSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const activeRequestRef = useRef<AbortController | null>(null);
   const { showToast } = useToast();
+
+  // Track elapsed time during loading to show transparent slow API status
+  useEffect(() => {
+    if (!loading) {
+      setElapsedSeconds(0);
+      return;
+    }
+    const timer = setInterval(() => {
+      setElapsedSeconds((s) => s + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [loading]);
 
   // Load chat history from DB on mount
   useEffect(() => {
@@ -70,10 +83,11 @@ export default function ChatPage() {
     activeRequestRef.current = controller;
     
     let isTimeout = false;
+    // Temporary workaround: 180s timeout for multi-step reasoning under free-tier 12.5s rate throttle
     const timeoutId = setTimeout(() => {
       isTimeout = true;
       controller.abort('timeout');
-    }, 60000); // 60s orchestrator loop timeout
+    }, 180000);
 
     try {
       const res = await fetch('/api/chat', {
@@ -87,7 +101,7 @@ export default function ChatPage() {
 
       if (!res.ok) {
         if (res.status === 429) {
-          showToast({ title: 'Rate Limited', message: 'Gemini API rate limit exceeded. Please wait a moment.', type: 'warning' });
+          showToast({ title: 'Rate Limited', message: 'Gemini API rate limit exceeded. Backoff in progress, please retry shortly.', type: 'warning' });
         } else {
           showToast({ title: 'Server Error', message: `Backend failed to process request (${res.status})`, type: 'error' });
         }
@@ -112,9 +126,22 @@ export default function ChatPage() {
       clearTimeout(timeoutId);
       if (err.name === 'AbortError') {
         if (isTimeout) {
-          showToast({ title: 'Request Timeout', message: 'The orchestrator took too long to respond (>60s).', type: 'error' });
+          showToast({ 
+            title: 'Request Timeout', 
+            message: 'The orchestrator took >180s due to API rate throttling. Please retry.', 
+            type: 'error' 
+          });
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              role: 'assistant',
+              content: '⚠️ Request timed out after 180s. The multi-step reasoning chain exceeded the free-tier API rate limits. Please try again.',
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            },
+          ]);
         } else {
-          return; // Aborted by unmount, halt execution and prevent state updates
+          return; // Aborted by unmount
         }
       } else {
         showToast({ title: 'Network Error', message: 'Failed to connect to the AETHER server.', type: 'error' });
@@ -162,6 +189,14 @@ export default function ChatPage() {
               <div className="message-body">
                 <div className="message-content">
                   <div className="loading-dots"><span /><span /><span /></div>
+                  {elapsedSeconds >= 15 && (
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '8px' }}>
+                      {elapsedSeconds >= 45 
+                        ? `Executing multi-step reasoning and observing results... (${elapsedSeconds}s)`
+                        : `Orchestrating multi-step execution across models (free-tier rate-throttled: ~12.5s/call)... (${elapsedSeconds}s)`
+                      }
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

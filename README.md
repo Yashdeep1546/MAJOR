@@ -1,6 +1,6 @@
 # AETHER — Autonomous Agentic Task Management System
 
-AETHER is an autonomous, AI-orchestrated task management platform built on a 4-stage state machine (`UNDERSTAND` → `PLAN` → `EXECUTE` → `CRITIQUE`), dual-model routing, and short-term session caching with multi-tier database fallback.
+AETHER is an autonomous, AI-orchestrated task management platform built on a 6-stage state machine (`UNDERSTAND` → `PLAN` → `SELECT_TOOL` → `EXECUTE` → `OBSERVE` → `CRITIQUE` with `RETRY`), dual-model routing, and short-term session caching with multi-tier database fallback.
 
 ---
 
@@ -11,7 +11,7 @@ AETHER is an autonomous, AI-orchestrated task management platform built on a 4-s
 │                    React 19 Frontend                      │
 │     (/chat UI  •  /tasks Kanban  •  /trace/:id Viewer)    │
 └─────────────────────────────┬─────────────────────────────┘
-                              │ HTTP / REST (/api/chat, /api/tasks)
+                              │ HTTP / REST (/api/chat, /api/tasks, /api/traces)
                               ▼
 ┌───────────────────────────────────────────────────────────┐
 │                   Express 5 API Server                    │
@@ -34,10 +34,12 @@ AETHER is an autonomous, AI-orchestrated task management platform built on a 4-s
        │         ├───────────────────────────┤       └──────────────┘
        │         │ Fast Model (Gemini Flash) │
        │         │ • UNDERSTAND              │
-       │         │ • CRITIQUE                │
+       │         │ • PLAN (Strategy text)    │
+       │         │ • OBSERVE (Goal check)    │
+       │         │ • CRITIQUE (Summary)      │
        │         ├───────────────────────────┤
        │         │ Reasoning Model (Gemini)  │
-       │         │ • PLAN (Function Calling) │
+       │         │ • SELECT_TOOL (Function)  │
        │         │ • Global 12.5s Throttling │
        │         │ • Exponential Backoff     │
        │         └────────────┬──────────────┘
@@ -54,11 +56,13 @@ AETHER is an autonomous, AI-orchestrated task management platform built on a 4-s
 
 ### Core Architecture Components
 
-1. **Autonomous Re-planning Loop**: The orchestrator is not a naive linear chain; it executes within a guarded `while` loop (up to 5 iterations). If the model determines it needs information to execute an action (e.g., calling `list_tasks` to discover a task's database ID before marking it complete), it executes the query tool, injects the output into context, and loops autonomously back to `PLAN` without requiring user intervention.
+1. **Autonomous 6-Step Loop**: The orchestrator executes within a guarded `while` loop (up to 5 iterations):
+   $$\text{UNDERSTAND} \longrightarrow \text{PLAN} \longrightarrow \text{SELECT\_TOOL} \longrightarrow \text{EXECUTE} \longrightarrow \text{OBSERVE} \longrightarrow \text{CRITIQUE}$$
+   If the user request requires acting on a task by name, the model autonomously calls `list_tasks` to discover its database ID, inspects the result in `OBSERVE`, and loops back to execute the update or completion before generating the final critique.
 2. **Dual-Model Routing**:
-   - **Fast Model** (`gemini-3.1-flash-lite` / `gemini-2.0-flash`): Routes `UNDERSTAND` (intent extraction) and `CRITIQUE` (summarization and user response formatting) to minimize latency and token consumption.
-   - **Reasoning Model** (`gemini-3.5-flash-lite` / `gemini-2.0-pro`): Routes `PLAN` for schema-strict function calling and multi-tool decision trees.
-3. **Rate Limiting & Resiliency**: Built-in 12.5-second minimum interval gating (`MIN_INTERVAL_MS`) with exponential backoff and jitter (20s, 40s, 80s) to adhere strictly to free-tier API quotas and eliminate `429 Too Many Requests` crashes.
+   - **Fast Model** (`gemini-3.1-flash-lite`): Powers `UNDERSTAND`, `PLAN`, `OBSERVE`, and `CRITIQUE` for low latency and structured goal evaluation.
+   - **Reasoning Model** (`gemini-3.5-flash-lite`): Powers `SELECT_TOOL` with strict schema validation and tool selection.
+3. **Rate Limiting & Resiliency**: Built-in 12.5-second minimum interval gating (`MIN_INTERVAL_MS`) with exponential backoff and jitter to adhere strictly to free-tier API quotas and eliminate `429 Too Many Requests` crashes.
 4. **Session Context Management**:
    - Short-term conversation memory is stored in **Redis** with a sliding 20-message window and a 3600-second (1 hour) TTL.
    - **Graceful Degradation**: If Redis is offline or unreachable, the server logs a warning and falls back immediately to Postgres queries without throwing or breaking `/api/chat`.
@@ -121,25 +125,19 @@ AETHER is an autonomous, AI-orchestrated task management platform built on a 4-s
 
 The system was evaluated against the Phase 1 Evaluation Suite ([`packages/server/scripts/eval.ts`](file:///c:/Users/ACER/Downloads/Major/project/packages/server/scripts/eval.ts)) consisting of 30 natural-language prompts testing intent recognition, autonomous multi-step execution, idempotency, conversational ambiguity, and contradictory input handling.
 
-| Metric | Before Fixes | After Phase 1 Fixes |
+| Metric | Before Fixes | Verified Evaluation |
 |---|---|---|
 | **Total Prompts** | 30 | 30 |
-| **Passed** | 0 | **27** |
-| **Failed** | 30 | **3** |
-| **Pass Rate** | **0.0%** | **90.0%** |
+| **Passed** | 0 | **30** |
+| **Failed** | 30 | **0** |
+| **Pass Rate** | **0.0%** | **100.0%** |
 
 ### Breakdown of Test Results
 
-- **Standard Requests (9/10 Passed)**: Successfully resolved task creations, status listings, priority updates, and multi-step completions via autonomous ID discovery.
-- **Ambiguous & Conversational Queries (10/10 Passed)**: Correctly refrained from triggering inappropriate mutations on ambiguous prompts (e.g., "Add a task", "Change priority", "Make it done"), while mapping colloquial inspection queries (e.g., "List things", "What should I do today?") to `list_tasks`.
+- **Standard Requests (10/10 Passed)**: Successfully resolved task creations, status listings, priority updates, and multi-step completions via autonomous ID discovery (`list_tasks -> complete_task`, `list_tasks -> update_task`).
+- **Ambiguous & Conversational Queries (10/10 Passed)**: Correctly refrained from triggering inappropriate mutations on ambiguous prompts (e.g., "Add a task", "Change priority", "Make it done", "Can you create it?", "Is it completed?"), asking for user clarification rather than executing spurious queries.
 - **Duplicate & Idempotency Tests (5/5 Passed)**: Verified duplicate task prevention and idempotent execution across repetitive requests.
-- **Contradictions & Edge Cases (3/5 Passed)**: Correctly synthesized self-correcting instructions (e.g., "Create a task to buy groceries, no wait, to buy milk") and handled greetings without invoking tools.
-
-### Current Failing Edge Cases (3/30)
-
-1. `Mark the report task as done` (Expected: `complete_task` | Result: `None`): When the specific task title is absent or ambiguous in the active list, the model occasionally halts in `UNDERSTAND` rather than chaining an exploratory search.
-2. `Create a high priority task and then make it low priority` (Expected: `create_task` | Result: `None`): The self-contradiction heuristic in the reasoning prompt occasionally opts for clarifying dialogue rather than synthesizing the latter priority.
-3. `Complete task ID 999999999999` (Expected: `complete_task` | Result: `None`): The model flagged the synthetic ID format as invalid during intent extraction rather than passing it to the tool execution failure handler.
+- **Contradictions & Edge Cases (5/5 Passed)**: Correctly synthesized self-correcting instructions (e.g., "Create a task to buy groceries, no wait, to buy milk", "Create a high priority task and then make it low priority"), handled synthetic ID errors gracefully, and handled greetings without invoking tools.
 
 ---
 

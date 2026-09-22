@@ -30,4 +30,5 @@ export interface StepResult {
   modelUsed: string;
   latencyMs: number;
   tokenCount: number;
+  error?: string;
 }

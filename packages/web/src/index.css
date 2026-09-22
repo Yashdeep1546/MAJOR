@@ -489,8 +489,11 @@ body {
 
 .trace-step.state-UNDERSTAND::after { background: hsl(200, 80%, 55%); border-color: hsl(200, 80%, 55%); }
 .trace-step.state-PLAN::after { background: hsl(275, 70%, 60%); border-color: hsl(275, 70%, 60%); }
+.trace-step.state-SELECT_TOOL::after { background: hsl(220, 85%, 60%); border-color: hsl(220, 85%, 60%); }
 .trace-step.state-EXECUTE::after { background: hsl(155, 70%, 50%); border-color: hsl(155, 70%, 50%); }
+.trace-step.state-OBSERVE::after { background: hsl(30, 90%, 55%); border-color: hsl(30, 90%, 55%); }
 .trace-step.state-CRITIQUE::after { background: hsl(40, 85%, 55%); border-color: hsl(40, 85%, 55%); }
+.trace-step.state-RETRY::after { background: hsl(0, 75%, 55%); border-color: hsl(0, 75%, 55%); }
 
 .trace-step-header {
   display: flex;

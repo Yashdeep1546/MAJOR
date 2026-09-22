@@ -86,12 +86,18 @@ export default function TraceViewer({ sessionId, onClose }: TraceViewerProps) {
                 {expandedStep === step.id && (
                   <div className="trace-step-output">
                     {step.toolInput ? (
-                      <>Input: {JSON.stringify(step.toolInput, null, 2)}{'\n'}</>
+                      <div style={{ marginBottom: '6px' }}>
+                        <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Input:</span>
+                        <pre style={{ margin: '4px 0', fontSize: '0.75rem' }}>{JSON.stringify(step.toolInput, null, 2)}</pre>
+                      </div>
                     ) : null}
                     {step.toolOutput ? (
-                      <>Output: {JSON.stringify(step.toolOutput, null, 2)}</>
+                      <div>
+                        <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Summary:</span>
+                        <pre style={{ margin: '4px 0', fontSize: '0.75rem' }}>{JSON.stringify(step.toolOutput, null, 2)}</pre>
+                      </div>
                     ) : null}
-                    {!step.toolInput && !step.toolOutput && 'No tool data for this step'}
+                    {!step.toolInput && !step.toolOutput && 'No extra data for this step'}
                   </div>
                 )}
               </div>

@@ -20,6 +20,95 @@ export interface OrchestratorOutput {
   toolsUsed?: string[];
 }
 
+function formatStructuredOutput(step: StepResult): unknown {
+  if (step.toolOutput !== undefined && step.toolOutput !== null) {
+    return step.toolOutput;
+  }
+
+  if (step.error) {
+    return { error: step.error };
+  }
+
+  switch (step.state) {
+    case 'UNDERSTAND': {
+      if (typeof step.output === 'string') {
+        try {
+          const match = step.output.match(/\{[\s\S]*?\}/);
+          if (match) {
+            const parsed = JSON.parse(match[0]);
+            return {
+              intent: parsed.intent || 'User request intent',
+              entities: parsed.entities || {},
+              ambiguities: parsed.ambiguities || [],
+            };
+          }
+        } catch {
+          // ignore parse error
+        }
+      }
+      return { summary: 'User intent and parameters extracted' };
+    }
+
+    case 'PLAN': {
+      if (typeof step.output === 'string') {
+        const lines = step.output
+          .split('\n')
+          .map((l) => l.replace(/^[*#\s-]+/, '').trim())
+          .filter((l) => l.length > 5 && !l.startsWith('Strategy'));
+        const summary = lines.slice(0, 2).join('; ') || 'Formulated execution strategy';
+        return { strategySummary: summary.substring(0, 200) };
+      }
+      return { strategySummary: 'Formulated execution strategy' };
+    }
+
+    case 'SELECT_TOOL': {
+      if (typeof step.output === 'object' && step.output !== null) {
+        return step.output;
+      }
+      return { selection: step.toolName ? `Selected ${step.toolName}` : 'Direct response' };
+    }
+
+    case 'EXECUTE': {
+      return step.output ?? { status: 'Executed' };
+    }
+
+    case 'OBSERVE': {
+      if (typeof step.output === 'string') {
+        try {
+          const match = step.output.match(/\{[\s\S]*?\}/);
+          if (match) {
+            const parsed = JSON.parse(match[0]);
+            return {
+              satisfied: parsed.satisfied === true,
+              summary: parsed.reasoning || (parsed.satisfied ? 'Step intent satisfied' : 'Further tool invocation needed'),
+            };
+          }
+        } catch {
+          // ignore parse error
+        }
+      }
+      return { satisfied: true, summary: 'Step evaluated' };
+    }
+
+    case 'CRITIQUE': {
+      if (typeof step.output === 'string') {
+        return {
+          status: 'Complete',
+          responseSummary: step.output.substring(0, 150) + (step.output.length > 150 ? '...' : ''),
+        };
+      }
+      return { status: 'Complete' };
+    }
+
+    case 'RETRY': {
+      return { retryReason: step.output || 'Tool argument validation retry' };
+    }
+
+    default:
+      return typeof step.output === 'object' ? step.output : { text: String(step.output || '') };
+  }
+}
+
 export class OrchestratorEngine {
   private gemini: GeminiClient;
 
@@ -293,13 +382,14 @@ export class OrchestratorEngine {
   }
 
   private async logStep(conversationId: string, sessionId: string, step: StepResult) {
+    const structuredOutput = formatStructuredOutput(step);
     await auditService.log({
       conversationId,
       sessionId,
       state: step.state,
       toolName: step.toolName,
       toolInput: step.toolInput,
-      toolOutput: step.toolOutput,
+      toolOutput: structuredOutput as any,
       modelUsed: step.modelUsed,
       latencyMs: step.latencyMs,
       tokenCount: step.tokenCount,
